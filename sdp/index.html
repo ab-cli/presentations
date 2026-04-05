@@ -184,46 +184,39 @@
         <!-- 5: Finding 2 — Dimension collapse (CIFAR10) -->
         <div class="slide">
             <h2>Finding 2: Structure Collapses Under Insufficient Dimension</h2>
-            <p style="margin-bottom: 8px;">UMAP projections of Xavier-initialized matrix projections of CIFAR10 image patches</p>
-            <div class="fig" style="max-width: 1050px;">
-                <img src="f2-cifar.png" alt="Dimension comparison CIFAR10">
-            </div>
-            <div class="dim-labels" style="max-width: 1050px;">
-                <span>8-dim</span>
-                <span>16-dim</span>
-                <span>32-dim</span>
-                <span class="highlight">64-dim</span>
-                <span>128-dim</span>
-                <span>256-dim</span>
-            </div>
-            <div class="arrow-row" style="max-width: 1050px; margin-top: 12px;">
-                <div class="zone" style="color: #fda4af; text-align: center;">Representation collapses<br>due to insufficient dimension</div>
-                <div class="arrow">&rArr;</div>
-                <div class="zone" style="color: #86efac; text-align: center;">Representation stabilizes</div>
+            <div class="two-col" style="align-items: center; max-width: 1100px;">
+                <div style="flex: 2;">
+                    <div class="fig" style="max-width: 700px;">
+                        <img src="f2-cifar-grid.png" alt="Dimension comparison CIFAR10">
+                        <div class="fig-caption">UMAP projections of Xavier-initialized embeddings at increasing dimensions (CIFAR10)</div>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <h3>CIFAR10</h3>
+                    <p style="font-size: 1.05rem; margin-bottom: 16px;">Embedding geometry at <strong>8, 16, 32-dim</strong> is collapsed and unstable.</p>
+                    <p style="font-size: 1.05rem; margin-bottom: 16px;">At <strong style="color: #fbbf24;">64-dim</strong> and above, the structure stabilizes and remains consistent.</p>
+                    <p style="font-size: 1.05rem;"><span style="color: #fda4af;">Collapsed</span> &rarr; <span style="color: #fbbf24;">Transition</span> &rarr; <span style="color: #86efac;">Stable</span></p>
+                </div>
             </div>
         </div>
 
         <!-- 6: Finding 2 — MNIST -->
         <div class="slide">
             <h2>Finding 2: Same Pattern on MNIST</h2>
-            <p style="margin-bottom: 8px;">UMAP projections of Xavier-initialized matrix projections of MNIST image patches</p>
-            <div class="fig" style="max-width: 1050px;">
-                <img src="f2-mnist.png" alt="Dimension comparison MNIST">
+            <div class="two-col" style="align-items: center; max-width: 1100px;">
+                <div style="flex: 2;">
+                    <div class="fig" style="max-width: 700px;">
+                        <img src="f2-mnist-grid.png" alt="Dimension comparison MNIST">
+                        <div class="fig-caption">UMAP projections of Xavier-initialized embeddings at increasing dimensions (MNIST)</div>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <h3>MNIST</h3>
+                    <p style="font-size: 1.05rem; margin-bottom: 16px;">Collapse threshold is lower: geometry stabilizes at <strong style="color: #fbbf24;">32-dim</strong> vs 64-dim for CIFAR10.</p>
+                    <p style="font-size: 1.05rem; margin-bottom: 16px;">Reflects <strong>lower data complexity</strong> — simpler images need fewer dimensions to represent.</p>
+                    <p style="font-size: 0.95rem; color: #888;">The threshold is dataset-dependent, but the collapse pattern is universal.</p>
+                </div>
             </div>
-            <div class="dim-labels" style="max-width: 1050px;">
-                <span>8-dim</span>
-                <span>16-dim</span>
-                <span class="highlight">32-dim</span>
-                <span>64-dim</span>
-                <span>128-dim</span>
-                <span>256-dim</span>
-            </div>
-            <div class="arrow-row" style="max-width: 1050px; margin-top: 12px;">
-                <div class="zone" style="color: #fda4af; text-align: center;">Collapses</div>
-                <div class="arrow">&rArr;</div>
-                <div class="zone" style="color: #86efac; text-align: center;">Stabilizes</div>
-            </div>
-            <p style="font-size: 0.95rem; color: #888; margin-top: 12px;">Collapse threshold differs by dataset (MNIST: 32-dim, CIFAR10: 64-dim) reflecting data complexity</p>
         </div>
 
         <!-- 7: Finding 3 — Accuracy vs dimension -->
