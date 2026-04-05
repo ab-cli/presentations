@@ -231,27 +231,17 @@
         <!-- 6: Key Finding — Overfitting trade-off -->
         <div class="slide">
             <h2>Key Finding: Sequential Reasoning Overfitting</h2>
-            <p style="margin-bottom: 16px; max-width: 850px; text-align: center;">As training progresses, accuracy on <strong>1-step problems improves</strong> while accuracy on <strong>4-step problems peaks then declines</strong></p>
-            <div class="stats-row">
-                <div class="stat">
-                    <div class="number" style="color: #86efac;">97%</div>
-                    <div class="label">x1 test accuracy<br>(1 step away)</div>
-                </div>
-                <div class="stat">
-                    <div class="number">47%</div>
-                    <div class="label">x2 test accuracy<br>(2 steps away)</div>
-                </div>
-                <div class="stat">
-                    <div class="number">31%</div>
-                    <div class="label">x3 test accuracy<br>(3 steps away)</div>
-                </div>
-                <div class="stat">
-                    <div class="number" style="color: #fda4af;">17%</div>
-                    <div class="label">x4 test accuracy<br>(4 steps away)</div>
-                </div>
-            </div>
-            <div class="card" style="max-width: 800px; margin-top: 16px; padding: 20px 28px;">
-                <p style="font-size: 1.05rem; text-align: center;"><strong style="color: #fbbf24;">Novel overfitting symptom:</strong> not just a train/test gap, but a <strong>trade-off between short-term and long-term reasoning</strong>. Optimizing for immediate next-step accuracy degrades multi-step reasoning capability.</p>
+            <p style="margin-bottom: 16px; max-width: 900px; text-align: center;">As training progresses, <strong style="color:#86efac;">1-step accuracy keeps improving</strong> while <strong style="color:#fda4af;">4-step accuracy peaks then declines</strong></p>
+            <table class="cmp-table" style="max-width: 750px;">
+                <tr><th>Epochs</th><th>x1 test (1-step)</th><th>x2 test (2-step)</th><th>x3 test (3-step)</th><th>x4 test (4-step)</th></tr>
+                <tr><td>1,000</td><td>86%</td><td>43%</td><td>30%</td><td>16.5%</td></tr>
+                <tr><td>5,000</td><td>96%</td><td>49%</td><td>29%</td><td>16.1%</td></tr>
+                <tr><td style="color:#fbbf24;"><strong>7,000</strong></td><td style="color:#86efac;">97%</td><td>47%</td><td>31%</td><td style="color:#fbbf24;"><strong>17.4%</strong></td></tr>
+                <tr><td>10,000</td><td>98%</td><td>48%</td><td>30%</td><td>14.5%</td></tr>
+                <tr><td>100,000</td><td style="color:#86efac;"><strong>99%</strong></td><td>46%</td><td>29%</td><td style="color:#fda4af;">10.9%</td></tr>
+            </table>
+            <div class="card" style="max-width: 800px; margin-top: 20px; padding: 20px 28px;">
+                <p style="font-size: 1.05rem; text-align: center;"><strong style="color: #fbbf24;">Novel overfitting symptom:</strong> not just a train/test gap, but a <strong>trade-off between short-term and long-term reasoning</strong>. x4 peaks at 7,000 epochs then declines by 37% at 100K, while x1 keeps climbing. Model selected at 7,000 epochs (sweet spot).</p>
             </div>
         </div>
 
@@ -271,14 +261,14 @@
                 <div>
                     <h3>Results: Major Improvement</h3>
                     <table class="cmp-table" style="width: 100%;">
-                        <tr><th>Dataset</th><th>FF (test)</th><th>LSTM (test)</th></tr>
+                        <tr><th>Dataset</th><th>FF @ 7K (test)</th><th>LSTM (test)</th></tr>
                         <tr><td>x1 (1-step)</td><td>97%</td><td style="color:#86efac;"><strong>87%</strong></td></tr>
                         <tr><td>x2 (2-step)</td><td>47%</td><td style="color:#86efac;"><strong>86%</strong></td></tr>
                         <tr><td>x3 (3-step)</td><td>31%</td><td style="color:#86efac;"><strong>58%</strong></td></tr>
-                        <tr><td>x4 (4-step)</td><td>17%</td><td style="color:#86efac;"><strong>33%</strong></td></tr>
+                        <tr><td>x4 (4-step)</td><td>17.4%</td><td style="color:#86efac;"><strong>33%</strong></td></tr>
                         <tr style="border-top: 2px solid #555;"><td><strong>Overall</strong></td><td>39%</td><td style="color:#86efac;"><strong>64%</strong></td></tr>
                     </table>
-                    <p style="font-size: 0.9rem; color: #888; margin-top: 8px;">LSTM nearly doubles multi-step accuracy while slightly trading off on 1-step</p>
+                    <p style="font-size: 0.9rem; color: #888; margin-top: 8px;">FF results at sweet spot (7K epochs). LSTM nearly doubles multi-step accuracy.</p>
                 </div>
             </div>
         </div>
