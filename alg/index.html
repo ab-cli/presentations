@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algebraic Reasoning in Neural Networks — Aaron Li</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true},{left: '$', right: '$', display: false}]});"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: #2d2d2d; color: #e8e8e8;
+            overflow: hidden; height: 100vh;
+        }
+        .deck { width: 100vw; height: 100vh; position: relative; }
+        .slide {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 50px 80px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .slide.active { opacity: 1; pointer-events: auto; }
+
+        h1 { font-size: 2.6rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 16px; text-align: center; line-height: 1.2; }
+        h2 { font-size: 2rem; font-weight: 700; margin-bottom: 24px; color: #8ab4f8; text-align: center; }
+        h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 12px; color: #a0c4e8; }
+        p, li { font-size: 1.15rem; line-height: 1.7; color: #c8c8c8; }
+        .subtitle { font-size: 1.2rem; color: #999; margin-bottom: 8px; }
+        .meta { font-size: 1rem; color: #777; margin-top: 24px; }
+        strong { color: #e8e8e8; font-weight: 600; }
+
+        ul { list-style: none; text-align: left; max-width: 850px; }
+        ul li { padding: 7px 0; padding-left: 28px; position: relative; }
+        ul li::before {
+            content: ''; position: absolute; left: 0; top: 17px;
+            width: 8px; height: 8px; border-radius: 50%; background: #8ab4f8;
+        }
+
+        .two-col { display: flex; gap: 40px; align-items: flex-start; max-width: 1050px; }
+        .two-col > div { flex: 1; }
+
+        .fig {
+            border-radius: 12px; border: 1px solid #444;
+            overflow: hidden; margin: 12px 0; background: #fff;
+        }
+        .fig img { width: 100%; display: block; }
+        .fig-caption {
+            font-size: 0.85rem; color: #888;
+            text-align: center; padding: 8px; background: #333;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #363636, #3d3d3d);
+            border: 2px solid #505050; border-radius: 16px;
+            padding: 24px 28px; transition: all 0.3s ease;
+        }
+        .card:hover {
+            border-color: #8ab4f8; transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(138,180,248,0.15);
+        }
+
+        .pipeline {
+            display: flex; align-items: center; gap: 0; margin: 24px 0;
+        }
+        .pipeline-stage {
+            background: linear-gradient(135deg, #363636, #3d3d3d);
+            border: 2px solid #505050; border-radius: 16px;
+            padding: 20px 24px; text-align: center; min-width: 160px;
+            transition: all 0.3s ease;
+        }
+        .pipeline-stage:hover { border-color: #8ab4f8; transform: translateY(-3px); }
+        .pipeline-stage .label { font-size: 1rem; font-weight: 600; color: #e8e8e8; }
+        .pipeline-stage .detail { font-size: 0.8rem; color: #999; margin-top: 4px; }
+        .pipeline-stage .ex { font-family: 'SF Mono', monospace; font-size: 0.85rem; color: #a0c4e8; margin-top: 6px; }
+        .pipeline-arrow { font-size: 1.6rem; color: #707070; padding: 0 10px; flex-shrink: 0; }
+
+        .stats-row { display: flex; gap: 32px; margin: 24px 0; }
+        .stat { text-align: center; }
+        .stat .number { font-size: 2.5rem; font-weight: 700; color: #8ab4f8; line-height: 1; }
+        .stat .label { font-size: 0.9rem; color: #999; margin-top: 8px; }
+
+        .cmp-table { border-collapse: collapse; margin: 16px 0; font-size: 1rem; }
+        .cmp-table th, .cmp-table td { padding: 10px 20px; border-bottom: 1px solid #444; text-align: left; }
+        .cmp-table th { color: #8ab4f8; font-weight: 600; }
+        .cmp-table td { color: #c8c8c8; }
+
+        .nav {
+            position: fixed; bottom: 24px; right: 32px;
+            display: flex; gap: 12px; align-items: center; z-index: 100;
+        }
+        .nav button {
+            background: #3a3a3a; border: 1px solid #555;
+            color: #999; width: 40px; height: 40px;
+            border-radius: 8px; font-size: 1.1rem; cursor: pointer; transition: all 0.2s;
+        }
+        .nav button:hover { background: #4a4a4a; color: #e8e8e8; }
+        .slide-counter { font-size: 0.85rem; color: #707070; font-variant-numeric: tabular-nums; }
+        .progress {
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: linear-gradient(90deg, #8ab4f8, #a0c4e8);
+            transition: width 0.4s ease; z-index: 100;
+        }
+
+        @media (max-width: 768px) {
+            .slide { padding: 24px 20px; }
+            h1 { font-size: 1.8rem; } h2 { font-size: 1.5rem; }
+            p, li { font-size: 1rem; }
+            .two-col, .pipeline { flex-direction: column; }
+            .pipeline-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress" id="progress"></div>
+    <div class="deck">
+
+        <!-- 1: Title -->
+        <div class="slide active">
+            <p class="subtitle">COMP4971C &middot; Independent Work &middot; Supervisor: Dr. Desmond Tsoi &middot; Grade: A-</p>
+            <h1>Algebraic Reasoning in<br>Neural Networks and LSTMs</h1>
+            <p style="color:#999; font-size: 1.05rem; margin-top: 8px;">Can neural networks learn step-by-step algebraic manipulation?</p>
+            <p class="meta">Aaron Branson Cigres Li &middot; HKUST &middot; Summer 2023</p>
+        </div>
+
+        <!-- 2: Problem & Approach -->
+        <div class="slide">
+            <h2>Problem &amp; Approach</h2>
+            <div class="two-col">
+                <div>
+                    <h3>The Challenge</h3>
+                    <p style="font-size: 1.05rem; margin-bottom: 16px;">Existing neurosymbolic models (Lample 2019, Charton 2021) predict final answers but treat reasoning as a <strong>black box</strong>.</p>
+                    <p style="font-size: 1.05rem;">Can we build a model that reasons <strong>one step at a time</strong>, producing transparent intermediate steps?</p>
+                </div>
+                <div>
+                    <h3>Key Idea</h3>
+                    <p style="font-size: 1.05rem; margin-bottom: 16px;">Train a neural network to predict the <strong>next algebraic manipulation step</strong>, not the final answer.</p>
+                    <p style="font-size: 1.05rem;">Chain predictions iteratively: output becomes input until the target expression is reached.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3: Representation Pipeline -->
+        <div class="slide">
+            <h2>Representation Pipeline</h2>
+            <p style="margin-bottom: 12px;">Expressions are converted through three stages before entering the model</p>
+            <div class="pipeline">
+                <div class="pipeline-stage">
+                    <div class="label">Standard Form</div>
+                    <div class="ex">A = B + C * D</div>
+                </div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-stage">
+                    <div class="label">Polish Notation</div>
+                    <div class="detail">Removes parentheses,<br>fixes expression length</div>
+                    <div class="ex">= A * + B C D</div>
+                </div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-stage">
+                    <div class="label">Binary Matrix</div>
+                    <div class="detail">6&times;8 selection +<br>permutation matrices</div>
+                    <div class="ex">$\mathbb{V}^{6 \times 8}$</div>
+                </div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-stage" style="border-color: #8ab4f8;">
+                    <div class="label">Neural Network</div>
+                    <div class="detail">Input: 2 matrices<br>Output: 1 matrix (next step)</div>
+                </div>
+            </div>
+            <p style="font-size: 0.95rem; color: #888; margin-top: 8px;">Space limited to equations with 4 variables (A, B, C, D) and 2 operators (+, -, *, /)</p>
+        </div>
+
+        <!-- 4: Datasets -->
+        <div class="slide">
+            <h2>Dataset Generation</h2>
+            <div class="two-col">
+                <div>
+                    <h3>Algorithmically Generated</h3>
+                    <ul>
+                        <li>Enumerate all valid 6&times;8 binary matrices</li>
+                        <li>Filter: must convert to valid expressions</li>
+                        <li>Group by <strong>equivalence</strong> (verified via SymPy)</li>
+                        <li>Measure distance using <strong>modified Levenshtein</strong> (minimum element repositions)</li>
+                        <li>4 datasets by reasoning distance (1-4 steps)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Dataset Sizes</h3>
+                    <table class="cmp-table" style="width: 100%;">
+                        <tr><th>Dataset</th><th>Steps</th><th>Train</th><th>Test</th></tr>
+                        <tr><td>x1</td><td>1</td><td>8,064</td><td>1,008</td></tr>
+                        <tr><td>x2</td><td>2</td><td>33,408</td><td>4,176</td></tr>
+                        <tr><td>x3</td><td>3</td><td>59,596</td><td>7,451</td></tr>
+                        <tr><td>x4</td><td>4</td><td>14,208</td><td>1,776</td></tr>
+                    </table>
+                    <p style="font-size: 0.9rem; color: #888; margin-top: 8px;">8:1:1 train/val/test split</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5: Architecture & Convergence -->
+        <div class="slide">
+            <h2>Model Architecture &amp; Training</h2>
+            <div class="two-col" style="align-items: center;">
+                <div>
+                    <h3>Architecture Search</h3>
+                    <p style="font-size: 1.05rem; margin-bottom: 12px;">Tested 4 to 9 layer feedforward networks. 5-layer model chosen — fastest convergence, smallest architecture.</p>
+                    <div class="card" style="font-family: 'SF Mono', monospace; font-size: 0.85rem; padding: 16px; line-height: 1.8;">
+                        Flatten(2, 6, 8)<br>
+                        Dense(96, relu)<br>
+                        Dense(96, relu) &times; 2<br>
+                        Dense(48, relu)<br>
+                        Dense(48, sigmoid)<br>
+                        Reshape(6, 8)
+                    </div>
+                    <p style="font-size: 0.9rem; color: #888; margin-top: 8px;">Loss: MSE &middot; Optimizer: Adam &middot; 100K epochs</p>
+                </div>
+                <div>
+                    <div class="fig" style="max-width: 450px;">
+                        <img src="convergence.png" alt="Training convergence over 100k epochs">
+                        <div class="fig-caption">Loss converges around 10,000 epochs — model chosen at 7,000 epochs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6: Key Finding — Overfitting trade-off -->
+        <div class="slide">
+            <h2>Key Finding: Sequential Reasoning Overfitting</h2>
+            <p style="margin-bottom: 16px; max-width: 850px; text-align: center;">As training progresses, accuracy on <strong>1-step problems improves</strong> while accuracy on <strong>4-step problems peaks then declines</strong></p>
+            <div class="stats-row">
+                <div class="stat">
+                    <div class="number" style="color: #86efac;">97%</div>
+                    <div class="label">x1 test accuracy<br>(1 step away)</div>
+                </div>
+                <div class="stat">
+                    <div class="number">47%</div>
+                    <div class="label">x2 test accuracy<br>(2 steps away)</div>
+                </div>
+                <div class="stat">
+                    <div class="number">31%</div>
+                    <div class="label">x3 test accuracy<br>(3 steps away)</div>
+                </div>
+                <div class="stat">
+                    <div class="number" style="color: #fda4af;">17%</div>
+                    <div class="label">x4 test accuracy<br>(4 steps away)</div>
+                </div>
+            </div>
+            <div class="card" style="max-width: 800px; margin-top: 16px; padding: 20px 28px;">
+                <p style="font-size: 1.05rem; text-align: center;"><strong style="color: #fbbf24;">Novel overfitting symptom:</strong> not just a train/test gap, but a <strong>trade-off between short-term and long-term reasoning</strong>. Optimizing for immediate next-step accuracy degrades multi-step reasoning capability.</p>
+            </div>
+        </div>
+
+        <!-- 7: LSTM Improvement -->
+        <div class="slide">
+            <h2>LSTM Improvement</h2>
+            <div class="two-col">
+                <div>
+                    <h3>Why LSTM?</h3>
+                    <p style="font-size: 1.05rem; margin-bottom: 16px;">Feedforward models hit a ceiling. LSTMs are designed for <strong>sequential data processing</strong> — a natural fit for step-by-step reasoning.</p>
+                    <div class="card" style="font-family: 'SF Mono', monospace; font-size: 0.85rem; padding: 16px; line-height: 1.8;">
+                        LSTM(96, input=(2, 48))<br>
+                        Dense(500 &rarr; 400 &rarr; 300 &rarr; 200 &rarr; 100, relu)<br>
+                        Dense(48, sigmoid)
+                    </div>
+                </div>
+                <div>
+                    <h3>Results: Major Improvement</h3>
+                    <table class="cmp-table" style="width: 100%;">
+                        <tr><th>Dataset</th><th>FF (test)</th><th>LSTM (test)</th></tr>
+                        <tr><td>x1 (1-step)</td><td>97%</td><td style="color:#86efac;"><strong>87%</strong></td></tr>
+                        <tr><td>x2 (2-step)</td><td>47%</td><td style="color:#86efac;"><strong>86%</strong></td></tr>
+                        <tr><td>x3 (3-step)</td><td>31%</td><td style="color:#86efac;"><strong>58%</strong></td></tr>
+                        <tr><td>x4 (4-step)</td><td>17%</td><td style="color:#86efac;"><strong>33%</strong></td></tr>
+                        <tr style="border-top: 2px solid #555;"><td><strong>Overall</strong></td><td>39%</td><td style="color:#86efac;"><strong>64%</strong></td></tr>
+                    </table>
+                    <p style="font-size: 0.9rem; color: #888; margin-top: 8px;">LSTM nearly doubles multi-step accuracy while slightly trading off on 1-step</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8: Summary -->
+        <div class="slide">
+            <h2>Summary</h2>
+            <ul style="max-width: 800px;">
+                <li>Designed an <strong>algorithmically defined expression space</strong> using Polish notation and binary matrix representations for 4-variable, 2-operator equations</li>
+                <li>Built data generation pipeline with <strong>equivalence verification</strong> (SymPy) and <strong>modified Levenshtein distance</strong> for step measurement</li>
+                <li>Identified a novel <strong>sequential reasoning overfitting</strong>: accuracy on 1-step problems improves while 4-step problems degrade — a trade-off between short-term and long-term reasoning</li>
+                <li>LSTM layer improved overall test accuracy from <strong>39% to 64%</strong>, with the biggest gains on multi-step problems</li>
+            </ul>
+            <div style="margin-top: 40px; text-align: center;">
+                <p class="meta">Aaron Branson Cigres Li &middot; HKUST COMP4971C &middot; Supervisor: Dr. Desmond Tsoi</p>
+                <p class="meta" style="margin-top: 4px;">
+                    <a href="mailto:abcli@connect.ust.hk" style="color: #8ab4f8; text-decoration: none;">abcli@connect.ust.hk</a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav">
+        <button onclick="prev()">&larr;</button>
+        <span class="slide-counter" id="counter">1 / 8</span>
+        <button onclick="next()">&rarr;</button>
+    </div>
+
+    <script>
+        let current = 0;
+        const slides = document.querySelectorAll('.slide');
+        const total = slides.length;
+        function goTo(n) {
+            slides[current].classList.remove('active');
+            current = Math.max(0, Math.min(n, total - 1));
+            slides[current].classList.add('active');
+            document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+            document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+        }
+        function next() { goTo(current + 1); }
+        function prev() { goTo(current - 1); }
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+        });
+        let ts = 0;
+        document.addEventListener('touchstart', e => { ts = e.changedTouches[0].screenX; });
+        document.addEventListener('touchend', e => {
+            const d = ts - e.changedTouches[0].screenX;
+            if (Math.abs(d) > 50) { d > 0 ? next() : prev(); }
+        });
+        document.getElementById('progress').style.width = `${(1 / total) * 100}%`;
+    </script>
+</body>
+</html>
