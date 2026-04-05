@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streamlining PDF to LaTeX Conversion — Aaron Li</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: #2d2d2d;
+            color: #e8e8e8;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Slide container */
+        .deck {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 100px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 32px;
+            color: #8ab4f8;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #a0c4e8;
+        }
+
+        p, li {
+            font-size: 1.25rem;
+            line-height: 1.7;
+            color: #c8c8c8;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: #999999;
+            margin-bottom: 8px;
+        }
+
+        .meta {
+            font-size: 1rem;
+            color: #777777;
+            margin-top: 24px;
+        }
+
+        .accent { color: #8ab4f8; }
+        .accent-green { color: #86efac; }
+        .accent-amber { color: #fbbf24; }
+        .accent-rose { color: #fda4af; }
+
+        strong { color: #e8e8f0; font-weight: 600; }
+
+        ul {
+            list-style: none;
+            text-align: left;
+            max-width: 800px;
+        }
+
+        ul li {
+            padding: 8px 0;
+            padding-left: 28px;
+            position: relative;
+        }
+
+        ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 18px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #a5b4fc;
+        }
+
+        /* Pipeline diagram */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin: 40px 0;
+        }
+
+        .pipeline-stage {
+            background: linear-gradient(135deg, #363636, #3d3d3d);
+            border: 2px solid #505050;
+            border-radius: 16px;
+            padding: 28px 32px;
+            text-align: center;
+            min-width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .pipeline-stage:hover {
+            border-color: #8ab4f8;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(138, 180, 248, 0.15);
+        }
+
+        .pipeline-stage .icon {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .pipeline-stage .label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e8e8f0;
+        }
+
+        .pipeline-stage .detail {
+            font-size: 0.85rem;
+            color: #999999;
+            margin-top: 6px;
+        }
+
+        .pipeline-arrow {
+            font-size: 1.8rem;
+            color: #707070;
+            padding: 0 12px;
+            flex-shrink: 0;
+        }
+
+        /* Flowchart */
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin: 20px 0;
+        }
+
+        .flow-node {
+            background: linear-gradient(135deg, #363636, #3d3d3d);
+            border: 2px solid #505050;
+            border-radius: 12px;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+            max-width: 340px;
+        }
+
+        .flow-node.highlight {
+            border-color: #8ab4f8;
+
+            background: linear-gradient(135deg, #3a3a3a, #424242);
+        }
+
+        .flow-arrow {
+            color: #707070;
+            font-size: 1.4rem;
+            padding: 4px 0;
+        }
+
+        .flow-label {
+            font-size: 0.8rem;
+            color: #888888;
+            padding: 2px 0;
+        }
+
+        /* Code / example blocks */
+        .example-block {
+            display: flex;
+            gap: 40px;
+            margin: 30px 0;
+            align-items: stretch;
+        }
+
+        .example-card {
+            flex: 1;
+            background: #333333;
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid #4a4a4a;
+        }
+
+        .example-card h3 {
+            margin-bottom: 16px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            background: #252525;
+            border: 1px solid #444444;
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #c8c8c8;
+            overflow-x: auto;
+        }
+
+        .code .err { color: #fda4af; }
+        .code .ok { color: #86efac; }
+        .code .cmd { color: #8ab4f8; }
+
+        /* Stats row */
+        .stats-row {
+            display: flex;
+            gap: 40px;
+            margin: 36px 0;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat .number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #8ab4f8;
+            line-height: 1;
+        }
+
+        .stat .label {
+            font-size: 0.95rem;
+            color: #999999;
+            margin-top: 8px;
+        }
+
+        /* Two-column layout */
+        .two-col {
+            display: flex;
+            gap: 60px;
+            align-items: flex-start;
+            max-width: 1000px;
+        }
+
+        .two-col > div {
+            flex: 1;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            bottom: 24px;
+            right: 32px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav button {
+            background: #3a3a3a;
+            border: 1px solid #555555;
+            color: #999999;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav button:hover {
+            background: #4a4a4a;
+            color: #e8e8f0;
+        }
+
+        .slide-counter {
+            font-size: 0.85rem;
+            color: #707070;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Progress bar */
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #8ab4f8, #a0c4e8);
+            transition: width 0.4s ease;
+            z-index: 100;
+        }
+
+        /* Limitation cards */
+        .limit-cards {
+            display: flex;
+            gap: 24px;
+            margin-top: 24px;
+            max-width: 900px;
+        }
+
+        .limit-card {
+            flex: 1;
+            background: #333333;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #4a4a4a;
+        }
+
+        .limit-card .icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .limit-card h3 {
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+        }
+
+        .limit-card p {
+            font-size: 0.95rem;
+            color: #999999;
+            line-height: 1.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .slide { padding: 30px 24px; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.6rem; }
+            p, li { font-size: 1.05rem; }
+            .pipeline { flex-direction: column; }
+            .pipeline-arrow { transform: rotate(90deg); }
+            .example-block { flex-direction: column; }
+            .two-col { flex-direction: column; gap: 24px; }
+            .stats-row { flex-wrap: wrap; gap: 24px; }
+            .limit-cards { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress" id="progress"></div>
+
+    <div class="deck" id="deck">
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <p class="subtitle">UROP Progress Report &middot; Supervisor: Dr. Hu Jishan</p>
+            <h1>Streamlining PDF to LaTeX Conversion<br>Using Open Source OCR</h1>
+            <p class="meta">Aaron Branson Cigres Li &middot; HKUST &middot; May 2024</p>
+            <p class="meta" style="margin-top: 8px; color: #707070;">Part of: Intelligent Tutoring Systems for University Math Foundation Subjects</p>
+        </div>
+
+        <!-- Slide 2: Problem -->
+        <div class="slide">
+            <h2>The Problem</h2>
+            <div class="two-col">
+                <div>
+                    <h3>Goal</h3>
+                    <p>Fine-tune <strong>DeepSeekMath-RL</strong> to solve university calculus problems. Need high-quality evaluation datasets from past exam papers.</p>
+                </div>
+                <div>
+                    <h3>Challenge</h3>
+                    <p>Past papers are <strong>PDF-only</strong> with complex math notation. Can't directly convert to the required LaTeX format. Third-party OCR tools restricted due to <strong class="accent-amber">data privacy</strong>.</p>
+                </div>
+            </div>
+            <div class="stats-row">
+                <div class="stat">
+                    <div class="number">53.2%</div>
+                    <div class="label">Gemini Ultra on MATH</div>
+                </div>
+                <div class="stat">
+                    <div class="number">52.9%</div>
+                    <div class="label">GPT-4 on MATH</div>
+                </div>
+                <div class="stat">
+                    <div class="number">51.7%</div>
+                    <div class="label">DeepSeekMath-RL on MATH</div>
+                </div>
+            </div>
+            <p style="font-size: 0.95rem; color: #888888; margin-top: 8px;">None sufficient for tutoring &mdash; motivating the fine-tuning approach</p>
+        </div>
+
+        <!-- Slide 3: Pipeline Overview -->
+        <div class="slide">
+            <h2>Pipeline Overview</h2>
+            <p style="margin-bottom: 20px;">Three-stage automated conversion from raw exam PDFs to structured LaTeX</p>
+            <div class="pipeline">
+                <div class="pipeline-stage">
+                    <div class="icon">&#x1F4C4;</div>
+                    <div class="label">PDF Segmentation</div>
+                    <div class="detail">Split pages into<br>individual expressions</div>
+                </div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-stage">
+                    <div class="icon">&#x1F50D;</div>
+                    <div class="label">OCR Model</div>
+                    <div class="detail">nougat-latex-base<br>Image &rarr; LaTeX strings</div>
+                </div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-stage">
+                    <div class="icon">&#x1F9F9;</div>
+                    <div class="label">Syntax Cleaning</div>
+                    <div class="detail">Regex post-processing<br>Fix OCR artifacts</div>
+                </div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-stage" style="border-color: #86efac;">
+                    <div class="icon">&#x2705;</div>
+                    <div class="label">LaTeX Dataset</div>
+                    <div class="detail">Clean, structured<br>evaluation data</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: PDF Segmentation -->
+        <div class="slide">
+            <h2>Stage 1: PDF Segmentation</h2>
+            <div class="two-col">
+                <div>
+                    <p style="margin-bottom: 20px;">The OCR model can only handle <strong>small image segments</strong> at a time &mdash; not full pages. So we need to break each page down first.</p>
+                    <ul>
+                        <li>Convert each PDF page to an image</li>
+                        <li><strong>Vertical segmentation</strong> &mdash; detect line boundaries, split into rows</li>
+                        <li><strong>Horizontal segmentation</strong> &mdash; separate math expressions from surrounding text</li>
+                        <li>Output: ordered folder of small, focused image segments per PDF</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="flowchart">
+                        <div class="flow-node">PDF Pages</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-label">convert to images</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-node">Page Images</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-label">detect line content</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-node">Vertical Segments</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-label">split math from text</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-node highlight">Ordered Segments</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: OCR Model -->
+        <div class="slide">
+            <h2>Stage 2: Optical Character Recognition</h2>
+            <div class="two-col">
+                <div>
+                    <h3>Model: nougat-latex-base</h3>
+                    <ul>
+                        <li><strong>62% accuracy</strong> on LaTeX conversion — highest on HuggingFace for this subcategory</li>
+                        <li>Open-source, privacy-compliant</li>
+                        <li>Processes each image segment individually</li>
+                        <li>Outputs aggregated into one text file per PDF</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="flowchart">
+                        <div class="flow-node">Segmented Images</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-label">pass to nougat-latex-base</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-node">LaTeX Strings</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-label">aggregate per PDF</div>
+                        <div class="flow-arrow">&darr;</div>
+                        <div class="flow-node highlight">Text File per PDF</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Syntax Cleaning -->
+        <div class="slide">
+            <h2>Stage 3: Syntax Cleaning</h2>
+            <p style="margin-bottom: 12px;">Regex-based post-processing to fix systematic OCR errors</p>
+            <div class="example-block">
+                <div class="example-card">
+                    <h3 style="color: #fda4af;">Problem: Math-mode wrapping</h3>
+                    <div class="code">
+                        <span class="err">this is a normal sentence</span><br>
+                        &darr; OCR converts to &darr;<br>
+                        <span class="err">\mathrm{this~is~a~normal~sentence}</span>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #999999; margin-top: 12px;">
+                        OCR wraps plain text in math commands, producing invalid LaTeX
+                    </p>
+                </div>
+                <div class="example-card">
+                    <h3 style="color: #fda4af;">Problem: Delimiter placement</h3>
+                    <div class="code">
+                        <span class="err">$f(x) is a function$</span><br>
+                        &darr; should be &darr;<br>
+                        <span class="ok">$f(x)$ is a function.</span>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #999999; margin-top: 12px;">
+                        Math delimiters incorrectly span non-math text
+                    </p>
+                </div>
+            </div>
+            <p style="font-size: 1rem; color: #888888; margin-top: 8px;">
+                A series of regex replace functions detect and correct these patterns automatically
+            </p>
+        </div>
+
+        <!-- Slide 7: Limitations -->
+        <div class="slide">
+            <h2>Known Limitations</h2>
+            <div class="limit-cards">
+                <div class="limit-card">
+                    <div class="icon">&#x1F504;</div>
+                    <h3 class="accent-rose">Repetition Artifacts</h3>
+                    <div class="code" style="font-size: 0.85rem; margin-bottom: 10px;">
+                        Expected: <span class="ok">This is a sentence,</span><br><br>
+                        Got: <span class="err">This is a sentenceThis is a sentence \n This is a sentenceThis is a sentence</span>
+                    </div>
+                    <p>Model sometimes outputs multiple copies of the same content. Inherent to the OCR model with no trivial workaround.</p>
+                </div>
+                <div class="limit-card">
+                    <div class="icon">&#x26A0;&#xFE0F;</div>
+                    <h3 class="accent-amber">Conversion Errors</h3>
+                    <p>Some mathematical symbols are misrecognized. Distorted or low-resolution source images compound this problem. Manual review still needed for edge cases.</p>
+                </div>
+                <div class="limit-card">
+                    <div class="icon">&#x1F50E;</div>
+                    <h3 class="accent">62% Base Accuracy</h3>
+                    <p>Highest available on HuggingFace for LaTeX OCR, but still requires the segmentation and cleaning stages to be usable in practice.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Summary -->
+        <div class="slide">
+            <h2>Summary</h2>
+            <ul style="max-width: 700px;">
+                <li>Built an <strong>end-to-end automated pipeline</strong> converting exam PDFs into structured LaTeX datasets</li>
+                <li>Designed <strong>segmentation algorithms</strong> to work around OCR model's input size limitations</li>
+                <li><strong>Regex-based cleaning</strong> systematically fixes recurring OCR artifacts</li>
+                <li>Enabled evaluation of <strong>DeepSeekMath-RL</strong> on real university calculus problems</li>
+            </ul>
+            <div style="margin-top: 48px; text-align: center;">
+                <p class="meta">Aaron Branson Cigres Li &middot; HKUST UROP &middot; Supervisor: Dr. Hu Jishan</p>
+                <p class="meta" style="margin-top: 4px;">
+                    <a href="mailto:abcli@connect.ust.hk" style="color: #8ab4f8; text-decoration: none;">abcli@connect.ust.hk</a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav">
+        <button onclick="prev()" title="Previous (Left arrow)">&larr;</button>
+        <span class="slide-counter" id="counter">1 / 8</span>
+        <button onclick="next()" title="Next (Right arrow)">&rarr;</button>
+    </div>
+
+    <script>
+        let current = 0;
+        const slides = document.querySelectorAll('.slide');
+        const total = slides.length;
+
+        function goTo(n) {
+            slides[current].classList.remove('active');
+            current = Math.max(0, Math.min(n, total - 1));
+            slides[current].classList.add('active');
+            document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+            document.getElementById('progress').style.width = `${((current + 1) / total) * 100}%`;
+        }
+
+        function next() { goTo(current + 1); }
+        function prev() { goTo(current - 1); }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+            if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+            if (e.key === 'End') { e.preventDefault(); goTo(total - 1); }
+        });
+
+        // Touch support
+        let touchStart = 0;
+        document.addEventListener('touchstart', e => { touchStart = e.changedTouches[0].screenX; });
+        document.addEventListener('touchend', e => {
+            const diff = touchStart - e.changedTouches[0].screenX;
+            if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+        });
+
+        // Init progress bar
+        document.getElementById('progress').style.width = `${(1 / total) * 100}%`;
+    </script>
+</body>
+</html>
